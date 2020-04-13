@@ -1,0 +1,8 @@
+.git/
+.idea/
+.vscode/
+env/
+**/__pycache__/
+.gitignore
+**/*.log
+*.tar

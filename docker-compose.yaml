@@ -1,0 +1,30 @@
+version: "3.5"
+
+services:
+  redis:
+    image: redis:6.0-rc-alpine
+    container_name: redis
+    networks:
+      - backend
+    ports:
+      - 6379:6379
+
+  backend:
+    build: .
+    image: avito-test
+    container_name: backend
+    environment:
+      - PORT=80
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    restart: always
+    depends_on:
+      - redis
+    networks:
+      - backend
+    ports:
+      - 80:80
+
+networks:
+  backend:
+    name: backend_network
