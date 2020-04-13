@@ -34,6 +34,8 @@ def index():
     
     if ip == None:
         return '<h1>400 Bad Request</h1> <br> Expected X-Forwarded-For header', 400
+    
+    ip = ip[:15]
 
     net = str(IPv4Network(ip+'/'+MASK).network)
     
