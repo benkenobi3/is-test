@@ -49,28 +49,32 @@ def index():
             abort(429)
         
         if datetime.now() > datetime.fromtimestamp(net_obj['first_req']) + timedelta(seconds=INTERVAL):
-            net_obj['first_req'] = datetime.now().timestamp()
-            net_obj['req_count'] = 1
-            red.set(net, json.dumps(net_obj))
+            new_net_obj(net)
 
         elif net_obj['req_count'] < LIMIT:
             net_obj['req_count']+=1
             red.set(net, json.dumps(net_obj))
 
         else:
-            net_obj['timeout'] = datetime.now() + timedelta(seconds=TIMEOUT)
-            net_obj['timeout'] = net_obj['timeout'].timestamp()
+            timeout = datetime.now() + timedelta(seconds=TIMEOUT)
+            net_obj['timeout'] = timeout.timestamp()
             red.set(net, json.dumps(net_obj))
             abort(429)
 
     else:
-        red.set(net, json.dumps({
-            'first_req': datetime.now().timestamp(),
-            'req_count': 1,
-            'timeout': datetime.now().timestamp(),
-        }))
+        new_net_obj(net)
 
     return send_file(STATIC_PATH)
+
+
+def new_net_obj(net):
+    red.set(net, json.dumps({
+        'first_req': datetime.now().timestamp(),
+        'req_count': 1,
+        'timeout': datetime.now().timestamp(),
+    }))
+
+
 
 if __name__ == '__main__':
     PORT = os.environ.get('PORT', '80')
