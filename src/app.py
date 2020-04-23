@@ -1,4 +1,4 @@
-from ipaddr import IPv4Network
+from ipaddr import IPv4Network, IPv4Address, AddressValueError
 from flask import Flask, request, abort, send_file
 from datetime import datetime, timedelta
 
@@ -7,6 +7,7 @@ import json
 
 import os
 from dotenv import load_dotenv
+
  
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DOT_ENV_PATH = os.path.join(BASE_DIR, '../.env')
@@ -14,8 +15,6 @@ STATIC_PATH = os.path.join(BASE_DIR, '../static/sticker.jpg')
 
 if os.path.exists(DOT_ENV_PATH):
     load_dotenv(DOT_ENV_PATH)
-
-app = Flask(__name__)
 
 MASK = os.environ.get('MASK', '24')
 LIMIT = int(os.environ.get('LIMIT', '100'))
@@ -25,18 +24,17 @@ TIMEOUT = int(os.environ.get('TIMEOUT', '120'))
 REIDS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
 
+app = Flask(__name__)
 red = redis.Redis(host=REIDS_HOST, port=REDIS_PORT, db=0)
+
 
 @app.route('/', methods=['GET'])
 def index():
 
     ip = request.headers.get('X-Forwarded-For')
-    
-    if ip == None:
-        return '<h1>400 Bad Request</h1> <br> Expected X-Forwarded-For header', 400
-    
-    ip = ip[:15]
 
+    ip = validated_ip(ip)
+    
     net = str(IPv4Network(ip+'/'+MASK).network)
     
     net_obj = red.get(net)
@@ -74,6 +72,21 @@ def new_net_obj(net):
         'timeout': datetime.now().timestamp(),
     }))
 
+
+def validated_ip(ip):
+
+    if ip is None:
+        abort(400, description="X-Forwarded-For header is missing")
+    
+    # if more than one IP received, get first
+    ip = ip.split()[0]
+
+    try:
+        IPv4Address(ip)
+    except AddressValueError:
+        abort(400, description="IP address has an invalid format")
+
+    return ip
 
 
 if __name__ == '__main__':

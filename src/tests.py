@@ -8,6 +8,11 @@ from datetime import datetime, timedelta
 HEADERS = {'X-Forwarded-For':'192.168.10.10'}
 HEADERS_SAME_SUBNET = {'X-Forwarded-For':'192.168.10.57'}
 HEADERS_DIFF_SUBNET = {'X-Forwarded-For':'192.168.56.10'}
+HEADERS_INVALID_IPS = (
+    {'X-Forwarded-For':'192.168.56'},
+    {'X-Forwarded-For':'---.---.---.---'},
+    {'X-Forwarded-For':'500.500.500.500'},
+)
 
 class FlaskTestCase(unittest.TestCase):
 
@@ -24,6 +29,12 @@ class FlaskTestCase(unittest.TestCase):
         assert '400' in r.status
         r = self.app.get('/', headers=HEADERS)
         assert '200' in r.status
+
+    @mock.patch('app.red', fakeredis.FakeRedis(server=fakeredis.FakeServer()))
+    def test_invalid_ips(self):
+        for h in HEADERS_INVALID_IPS:
+            r = self.app.get('/', headers=h)
+            assert '400' in r.status
 
     @mock.patch('app.red', fakeredis.FakeRedis(server=fakeredis.FakeServer()))
     def test_limit(self):
